@@ -36,14 +36,9 @@ jobs:
           copy frpc.exe dist\FrpTunnelGuard\frpc.exe
           copy frpc.toml dist\FrpTunnelGuard\frpc.toml
 
-      - name: Package artifact (zip)
-        shell: pwsh
-        run: |
-          Compress-Archive -Path dist\FrpTunnelGuard\* -DestinationPath FrpTunnelGuard.zip
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: FrpTunnelGuard
-          path: FrpTunnelGuard.zip
+          path: dist\FrpTunnelGuard\*
           retention-days: 7
