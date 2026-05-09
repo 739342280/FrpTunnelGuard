@@ -19,7 +19,7 @@
 
 ## 📥 下载与使用（推荐）
 
-如果你只是**使用**该工具，无需安装 Python 环境。直接从 [GitHub Releases](https://github.com/你的仓库/releases) 或 [Actions](https://github.com/你的仓库/actions) 页面下载已经打包好的 `FrpTunnelGuard.zip`。
+如果你只是**使用**该工具，无需安装 Python 环境。直接从 [GitHub Releases](https://github.com/739342280/FrpTunnelGuard/releases) 或 [Actions](https://github.com/739342280/FrpTunnelGuard/actions) 页面下载已经打包好的 `FrpTunnelGuard.zip`。
 
 1. 解压 `FrpTunnelGuard.zip` 到任意目录。
 2. 编辑 `frpc.toml`，填入你自己的服务器地址和 token（见后文配置说明）。
