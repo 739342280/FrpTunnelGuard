@@ -1,0 +1,25 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 虚拟环境
+venv/
+env/
+
+# 运行时生成的配置文件（保留本地设置，不要污染仓库）
+frpc.log
+frp_guard.log
+frpc.toml
+
+# 打包相关
+build/
+dist/
+*.spec
+
+# IDE
+.idea/
+.vscode/
+
+# 操作系统
+Thumbs.db
+Desktop.ini
