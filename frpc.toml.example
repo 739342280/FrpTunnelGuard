@@ -1,0 +1,22 @@
+# ================= 基础连接设置 =================
+serverAddr = "your-server.com"
+serverPort = 2469
+
+[auth]
+token = "your_token_here"
+
+[log]
+to = "./frpc.log"
+level = "info"
+maxDays = 3
+
+[transport]
+heartbeatInterval = 30
+heartbeatTimeout = 90
+
+[[proxies]]
+name = "work-pc-rdp"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 3389
+remotePort = 33389
