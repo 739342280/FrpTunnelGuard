@@ -1,6 +1,7 @@
 import re
 import os
 import time
+import sys
 import socket
 import threading
 import subprocess
@@ -12,12 +13,15 @@ import psutil
 from PIL import Image, ImageDraw
 import pystray
 
-# 程序根目录（guard.py 所在目录）
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# ------ 程序根目录：自动适配开发环境与 PyInstaller 打包环境 ------
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)      # 打包后 exe 所在目录
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 开发环境脚本目录
 
 CONFIG = {
     "domain": "work.doggge.com",
-    "work_dir": BASE_DIR,                      # 现在与 guard.py 同目录
+    "work_dir": BASE_DIR,                      # 现在与 exe（或脚本）同目录
     "frpc_exe": "frpc.exe",
     "config_file": "frpc.toml",
     "status_freq": 1.5,
@@ -35,7 +39,7 @@ class FrpGuard:
         self.current_port = ""
         self.is_running = True
         self.is_active = True
-        self.full_path = os.path.join(CONFIG["work_dir"], CONFIG["frpc_exe"])
+        self.full_path = os.path.join(BASE_DIR, CONFIG["frpc_exe"])
 
         self.connection_start_time = None
         self.last_heartbeat = time.time()

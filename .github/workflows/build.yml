@@ -23,13 +23,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 关键步骤：用模板文件生成临时的 frpc.toml 供打包
       - name: Prepare frpc.toml for packaging
         run: copy frpc.toml.example frpc.toml
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onedir --name FrpTunnelGuard --add-data "frpc.exe;." --add-data "frpc.toml;." guard.py
+          pyinstaller --onedir --name FrpTunnelGuard guard.py
+
+      - name: Copy external files to dist
+        shell: cmd
+        run: |
+          copy frpc.exe dist\FrpTunnelGuard\frpc.exe
+          copy frpc.toml dist\FrpTunnelGuard\frpc.toml
 
       - name: Package artifact (zip)
         shell: pwsh
