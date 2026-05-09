@@ -23,7 +23,9 @@ CONFIG = {
     "status_freq": 1.5,
     "dns_freq": 60,
     "heartbeat_freq": 300,
-    "log_file": os.path.join(BASE_DIR, "frp_guard.log")   # 日志也在这里
+    "log_file": os.path.join(BASE_DIR, "frp_guard.log"),   # 守护日志
+    "max_log_lines": 1000,                     # 日志最大保留行数
+    "log_view_lines": 30                       # 查看日志时展示的行数
 }
 
 class FrpGuard:
@@ -37,7 +39,6 @@ class FrpGuard:
 
         self.connection_start_time = None
         self.last_heartbeat = time.time()
-        # 新增：标记是否已经输出过“上线成功”日志
         self.initial_online_logged = False
 
         log_dir = os.path.dirname(CONFIG["log_file"])
@@ -50,10 +51,31 @@ class FrpGuard:
         try:
             with open(CONFIG["log_file"], "a", encoding="utf-8") as f:
                 f.write(log_line)
+            # 写入后自动修剪日志（保留最近1000行）
+            self._trim_log(CONFIG["log_file"], CONFIG["max_log_lines"])
         except Exception:
             pass
         if self.log_cb:
             self.log_cb(log_line.strip())
+
+    def _trim_log(self, filepath, max_lines):
+        """将日志文件保留为最近的 max_lines 行"""
+        try:
+            # 检查文件是否存在，并确保不是空文件
+            if not os.path.exists(filepath):
+                return
+            with open(filepath, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            # 如果行数没超过限制，直接返回
+            if len(lines) <= max_lines:
+                return
+            # 保留最后 max_lines 行
+            trimmed = lines[-max_lines:]
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.writelines(trimmed)
+        except Exception:
+            # 裁剪失败不致命，静默处理
+            pass
 
     def get_latency(self):
         if not self.is_active or not self.current_port:
@@ -132,10 +154,8 @@ class FrpGuard:
             self.connection_start_time = datetime.now()
             self.write_log(f"frpc 已启动，连接至 {CONFIG['domain']}:{port}", "SUCCESS")
 
-            # 首次启动或重连后，输出一条可靠的上线确认日志
             if not self.initial_online_logged:
-                # 给 frpc 一点点时间建立连接，延迟会更准确
-                time.sleep(1)
+                time.sleep(1)   # 等待连接建立，获得更准确的延迟
                 ms = self.get_latency()
                 self.write_log(
                     f"✅ 隧道已就绪 - {CONFIG['domain']}:{port} | 延迟: {ms}ms",
@@ -143,7 +163,6 @@ class FrpGuard:
                 )
                 self.initial_online_logged = True
             else:
-                # 后续端口变化时，也输出一条简洁的确认
                 ms = self.get_latency()
                 self.write_log(
                     f"🔄 端口已切换 - {CONFIG['domain']}:{port} | 延迟: {ms}ms",
@@ -165,7 +184,6 @@ class FrpGuard:
             time.sleep(CONFIG["status_freq"])
 
     def monitor_loop(self):
-        # ❌ 移除过早的 _log_initial_status 调用
         self.write_log("隧道守门员开始监控（每60秒检测DNS）")
 
         while self.is_running:
@@ -186,9 +204,6 @@ class FrpGuard:
                 except Exception as e:
                     self.write_log(f"DNS解析失败: {e}", "ERROR")
             time.sleep(CONFIG["dns_freq"])
-
-    # ❌ _log_initial_status 方法已不再需要，但可以保留为空以备将来使用
-    # （实际上已删除，如需要可自行添加）
 
     def get_status_info(self):
         frp_alive = any(p.info['name'] == CONFIG["frpc_exe"] for p in psutil.process_iter(['name']))
@@ -257,9 +272,10 @@ class TrayManager:
         self.icon.notify(msg, "隧道守护状态")
 
     def show_log_window(self, icon, item):
+        """弹出日志窗口，仅显示最近30条日志"""
         def run_log_window():
             window = tk.Tk()
-            window.title("隧道守护日志")
+            window.title("隧道守护日志 (最近30条)")
             window.geometry("600x400")
             text_area = scrolledtext.ScrolledText(window, wrap=tk.WORD, state='disabled')
             text_area.pack(fill=tk.BOTH, expand=True)
@@ -267,9 +283,15 @@ class TrayManager:
             def refresh_log():
                 try:
                     with open(CONFIG["log_file"], "r", encoding="utf-8") as f:
-                        content = f.read()
-                except:
-                    content = "无法读取日志文件"
+                        all_lines = f.readlines()
+                    # 取最后30行；如果不足30行则全部显示
+                    recent_lines = all_lines[-CONFIG["log_view_lines"]:]
+                    content = "".join(recent_lines) if recent_lines else "（暂无日志）"
+                except FileNotFoundError:
+                    content = "日志文件未找到"
+                except Exception as e:
+                    content = f"读取日志失败: {e}"
+
                 text_area.config(state='normal')
                 text_area.delete(1.0, tk.END)
                 text_area.insert(tk.END, content)
